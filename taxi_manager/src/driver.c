@@ -61,30 +61,47 @@ void driver_loop(int in_pipe, int out_pipe) {
 
         if (strcmp(buf, "get_status") == 0) {
             fprintf(out, "%s\n", state == AVAILABLE ? "Available" : "Busy");
-            fflush(out);
+            if (fflush(out) == EOF) {
+                perror("driver: fflush failed");
+                break;
+            }
         } else if (strncmp(buf, "send_task ", 10) == 0) {
             int sec;
             if (sscanf(buf + 10, "%d", &sec) != 1 || sec <= 0) {
                 fprintf(out, "Invalid seconds\n");
-                fflush(out);
+                if (fflush(out) == EOF) {
+                    perror("driver: fflush failed");
+                    break;
+                }
                 continue;
             }
             if (state == AVAILABLE) {
                 end_time = time(NULL) + sec;
                 state = BUSY;
                 fprintf(out, "OK\n");
-                fflush(out);
+                if (fflush(out) == EOF) {
+                    perror("driver: fflush failed");
+                    break;
+                }
             } else {
                 fprintf(out, "Busy\n");
-                fflush(out);
+                if (fflush(out) == EOF) {
+                    perror("driver: fflush failed");
+                    break;
+                }
             }
         } else {
             fprintf(out, "Unknown command\n");
-            fflush(out);
+            if (fflush(out) == EOF) {
+                perror("driver: fflush failed");
+                break;
+            }
         }
     }
 
-    fclose(in);
-    fclose(out);
+    if (in)
+        fclose(in);
+    if (out)
+        fclose(out);
     exit(0);
 }

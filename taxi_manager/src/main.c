@@ -51,6 +51,8 @@ static void create_driver() {
                 fclose(to);
             if (from)
                 fclose(from);
+            close(pipe_to_child[1]);
+            close(pipe_from_child[0]);
             kill(pid, SIGTERM);
             waitpid(pid, NULL, 0);
             return;
@@ -69,8 +71,15 @@ static void send_task(pid_t pid, int sec) {
         printf("Driver with PID %d not found\n", pid);
         return;
     }
+    if (!d->to_driver || !d->from_driver) {
+        printf("Error: Invalid pipe for driver %d\n", pid);
+        return;
+    }
     fprintf(d->to_driver, "send_task %d\n", sec);
-    fflush(d->to_driver);
+    if (fflush(d->to_driver) == EOF) {
+        printf("Error writing to driver %d\n", pid);
+        return;
+    }
 
     char buf[MAX_BUF];
     if (fgets(buf, MAX_BUF, d->from_driver) == NULL) {
@@ -87,8 +96,15 @@ static void get_status(pid_t pid) {
         printf("Driver with PID %d not found\n", pid);
         return;
     }
+    if (!d->to_driver || !d->from_driver) {
+        printf("Error: Invalid pipe for driver %d\n", pid);
+        return;
+    }
     fprintf(d->to_driver, "get_status\n");
-    fflush(d->to_driver);
+    if (fflush(d->to_driver) == EOF) {
+        printf("Error writing to driver %d\n", pid);
+        return;
+    }
 
     char buf[MAX_BUF];
     if (fgets(buf, MAX_BUF, d->from_driver) == NULL) {
@@ -149,8 +165,10 @@ int main() {
     }
 
     for (int i = 0; i < num_drivers; i++) {
-        fclose(drivers[i].to_driver);
-        fclose(drivers[i].from_driver);
+        if (drivers[i].to_driver)
+            fclose(drivers[i].to_driver);
+        if (drivers[i].from_driver)
+            fclose(drivers[i].from_driver);
         kill(drivers[i].pid, SIGTERM);
         waitpid(drivers[i].pid, NULL, 0);
     }
