@@ -4,7 +4,7 @@ void driver_loop(int in_pipe, int out_pipe) {
     FILE *in = fdopen(in_pipe, "r");
     FILE *out = fdopen(out_pipe, "w");
     if (!in || !out) {
-        perror("error: ");
+        perror("driver: fdopen failed");
         exit(1);
     }
 
@@ -36,7 +36,7 @@ void driver_loop(int in_pipe, int out_pipe) {
             if (select(fd + 1, &fds, NULL, NULL, NULL) < 0) {
                 if (errno == EINTR)
                     continue;
-                perror("driver error: select failed");
+                perror("driver: select failed");
                 break;
             }
         } else {
@@ -49,7 +49,7 @@ void driver_loop(int in_pipe, int out_pipe) {
             } else if (ret < 0) {
                 if (errno == EINTR)
                     continue;
-                perror("driver error: select failed");
+                perror("driver: select failed");
                 break;
             }
         }

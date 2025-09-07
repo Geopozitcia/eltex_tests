@@ -14,40 +14,39 @@ static struct Driver *find_driver(pid_t pid) {
 
 static void create_driver() {
     if (num_drivers >= MAX_DRIVERS) {
-        printf("error: you can't create more than (%d) drivers.\n",
-               MAX_DRIVERS);
+        printf("Error: Maximum number of drivers reached (%d)\n", MAX_DRIVERS);
         return;
     }
 
     int pipe_to_child[2];
     int pipe_from_child[2];
     if (pipe(pipe_to_child) == -1 || pipe(pipe_from_child) == -1) {
-        perror("pipe failed");
+        perror("create_driver: pipe failed");
         return;
     }
 
     pid_t pid = fork();
     if (pid == -1) {
-        perror("fork failed");
+        perror("create_driver: fork failed");
         close(pipe_to_child[0]);
         close(pipe_to_child[1]);
         close(pipe_from_child[0]);
         close(pipe_from_child[1]);
         return;
-    } else if (pid == 0) { // Child section
+    } else if (pid == 0) {
         close(pipe_to_child[1]);
         close(pipe_from_child[0]);
         close(STDIN_FILENO);
         close(STDOUT_FILENO);
         close(STDERR_FILENO);
         driver_loop(pipe_to_child[0], pipe_from_child[1]);
-    } else { // Parent section
+    } else {
         close(pipe_to_child[0]);
         close(pipe_from_child[1]);
         FILE *to = fdopen(pipe_to_child[1], "w");
         FILE *from = fdopen(pipe_from_child[0], "r");
         if (!to || !from) {
-            perror("create_driver error");
+            perror("create_driver: fdopen failed");
             if (to)
                 fclose(to);
             if (from)
@@ -82,7 +81,6 @@ static void send_task(pid_t pid, int sec) {
     printf("%s\n", buf);
 }
 
-// Получение статуса
 static void get_status(pid_t pid) {
     struct Driver *d = find_driver(pid);
     if (!d) {
@@ -112,9 +110,8 @@ static void get_drivers() {
 }
 
 int main() {
-    printf(
-        "Taxi simulation. Use commands: create_driver, send_task <pid> <sec>, "
-        "get_status <pid>, get_drivers or exit\n");
+    printf("Taxi CLI started. Commands: create_driver, send_task <pid> <sec>, "
+           "get_status <pid>, get_drivers, exit\n");
 
     char input[MAX_BUF];
     while (1) {

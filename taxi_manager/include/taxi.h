@@ -12,15 +12,15 @@
 #include <time.h>
 #include <unistd.h>
 
-#define MAX_DRIVERS 10
+#define MAX_DRIVERS 100
 #define MAX_BUF 256
 
 typedef enum { AVAILABLE, BUSY } DriverState;
 
 struct Driver {
     pid_t pid;
-    FILE *to_driver;   // Pipe для отправки команд
-    FILE *from_driver; // Pipe для получения ответов
+    FILE *to_driver;
+    FILE *from_driver;
 };
 
 void driver_loop(int in_pipe, int out_pipe);
